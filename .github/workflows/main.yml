@@ -11,6 +11,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
 
     steps:
       - name: Repoyu Klonla
@@ -51,3 +54,4 @@ jobs:
           name: Gardaş FM v${{ github.run_number }}
           files: GardasFM.apk
           make_latest: true
+          
