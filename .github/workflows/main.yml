@@ -14,10 +14,10 @@ jobs:
 
     steps:
       - name: Repoyu Klonla
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Java 21 Kurulumu
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
@@ -43,7 +43,7 @@ jobs:
             exit 1
           fi
 
-      - name: Release Olarak Yayınla (Otomatik Güncelleme İçin Şart)
+      - name: Release Olarak Yayınla
         uses: softprops/action-gh-release@v2
         if: success()
         with:
