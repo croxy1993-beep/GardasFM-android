@@ -14,36 +14,36 @@ jobs:
 
     steps:
       - name: Repoyu Klonla
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Java 21 Kurulumu
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
 
-      - name: Gradlew Yetkisi Ver
-        run: chmod +x gradlew || true
-
-      - name: Proje Dosyalarını Kontrol Et
+      - name: Gradlew İzinlerini Ver
         run: |
-          ls -la
-          test -f settings.gradle.kts || { echo "HATA: settings.gradle.kts yok."; exit 1; }
-          test -f app/build.gradle.kts || { echo "HATA: app/build.gradle.kts yok."; exit 1; }
+          chmod +x gradlew || true
+          chmod +x app/build.gradle.kts || true
 
-      - name: APK Derle
-        run: ./gradlew assembleRelease --no-daemon --stacktrace || gradle assembleRelease --no-daemon --stacktrace
-
-      - name: APK Adını Düzenle
+      - name: Gradle ile APK Derle
         run: |
-          mkdir -p output
+          if [ -f "./gradlew" ]; then
+            ./gradlew assembleRelease --no-daemon --stacktrace
+          else
+            gradle assembleRelease --no-daemon --stacktrace
+          fi
+
+      - name: APK Hazırla
+        run: |
           if [ -f app/build/outputs/apk/release/app-release.apk ]; then
             cp app/build/outputs/apk/release/app-release.apk GardasFM-android.apk
           elif [ -f app/build/outputs/apk/debug/app-debug.apk ]; then
             cp app/build/outputs/apk/debug/app-debug.apk GardasFM-android.apk
           fi
 
-      - name: APK'yı Artifact Olarak Yükle
+      - name: APK Artifact Olarak Yükle
         uses: actions/upload-artifact@v4
         with:
           name: GardasFM-android-apk
@@ -57,3 +57,4 @@ jobs:
           name: Gardaş FM v${{ github.run_number }}
           files: GardasFM-android.apk
           make_latest: true
+          
