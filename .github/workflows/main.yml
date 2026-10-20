@@ -10,7 +10,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: GardasFM
+    working-directory: GardasFM-android
 
 jobs:
   build:
@@ -49,13 +49,13 @@ jobs:
       - name: APK'yi artifact olarak yukle
         uses: actions/upload-artifact@v4
         with:
-          name: GardasFM-apk
-          path: GardasFM/GardasFM.apk
+          name: GardasFM-android-apk
+          path: GardasFM-android/GardasFM-android.apk
 
       - name: Release olarak yayinla
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.run_number }}
           name: Gardaş FM v${{ github.run_number }}
-          files: GardasFM/GardasFM.apk
+          files: GardasFM-android/GardasFM-android.apk
           make_latest: true
