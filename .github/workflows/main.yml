@@ -16,14 +16,11 @@ jobs:
       - name: Repoyu Klonla
         uses: actions/checkout@v4
 
-      - name: Java 17 Kurulumu
+      - name: Java 21 Kurulumu
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
-
-      - name: Android SDK ve Gradle Ayarla
-        uses: gradle/actions/setup-gradle@v3
+          java-version: "21"
 
       - name: Gradlew Yetkisi Ver
         run: chmod +x gradlew || true
@@ -36,28 +33,21 @@ jobs:
             gradle assembleRelease --no-daemon
           fi
 
-      - name: APK Dosyasını Bul ve Kopyala
+      - name: APK Hazırla
         run: |
           FOUND_APK=$(find . -name "*.apk" | head -n 1)
           if [ -n "$FOUND_APK" ]; then
-            cp "$FOUND_APK" GardasFM-android.apk
+            cp "$FOUND_APK" GardasFM.apk
           else
-            echo "HATA: Derlenen APK bulunamadı!"
+            echo "HATA: APK bulunamadı!"
             exit 1
           fi
 
-      - name: APK Artifact Olarak Yükle
-        uses: actions/upload-artifact@v4
-        with:
-          name: GardasFM-android-apk
-          path: GardasFM-android.apk
-
-      - name: Release Olarak Yayınla
+      - name: Release Olarak Yayınla (Otomatik Güncelleme İçin Şart)
         uses: softprops/action-gh-release@v2
         if: success()
         with:
           tag_name: v${{ github.run_number }}
           name: Gardaş FM v${{ github.run_number }}
-          files: GardasFM-android.apk
+          files: GardasFM.apk
           make_latest: true
-          
