@@ -13,5 +13,5 @@ dependencyResolutionManagement {
         maven("https://jitpack.io")   // NewPipeExtractor buradan gelir
     }
 }
-rootProject.name = "GardasFM"
+rootProject.name = "GardasFM-android"
 include(":app")
