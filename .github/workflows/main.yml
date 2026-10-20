@@ -1,0 +1,61 @@
+name: APK derle
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: GardasFM
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Android SDK hazirla
+        run: |
+          SDKM="$(command -v sdkmanager || echo "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager")"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-35" "build-tools;35.0.0" || true
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+
+      - name: Proje dosyalari yerinde mi kontrol et
+        run: |
+          ls -la
+          test -f settings.gradle.kts || { echo "HATA: settings.gradle.kts yok."; exit 1; }
+          test -f app/build.gradle.kts || { echo "HATA: app/build.gradle.kts yok."; exit 1; }
+          test -f app/gardas.keystore || { echo "HATA: app/gardas.keystore yok (imza anahtari)."; exit 1; }
+
+      - name: APK derle
+        run: gradle assembleRelease --no-daemon --stacktrace
+
+      - name: APK adini duzenle
+        run: cp app/build/outputs/apk/release/app-release.apk GardasFM.apk
+
+      - name: APK'yi artifact olarak yukle
+        uses: actions/upload-artifact@v4
+        with:
+          name: GardasFM-apk
+          path: GardasFM/GardasFM.apk
+
+      - name: Release olarak yayinla
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Gardaş FM v${{ github.run_number }}
+          files: GardasFM/GardasFM.apk
+          make_latest: true
