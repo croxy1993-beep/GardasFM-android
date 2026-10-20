@@ -8,10 +8,6 @@ on:
 permissions:
   contents: write
 
-defaults:
-  run:
-    working-directory: GardasFM-android
-
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -44,18 +40,18 @@ jobs:
         run: gradle assembleRelease --no-daemon --stacktrace
 
       - name: APK adini duzenle
-        run: cp app/build/outputs/apk/release/app-release.apk GardasFM.apk
+        run: cp app/build/outputs/apk/release/app-release.apk GardasFM-android.apk
 
       - name: APK'yi artifact olarak yukle
         uses: actions/upload-artifact@v4
         with:
           name: GardasFM-android-apk
-          path: GardasFM-android/GardasFM-android.apk
+          path: GardasFM-android.apk
 
       - name: Release olarak yayinla
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.run_number }}
           name: Gardaş FM v${{ github.run_number }}
-          files: GardasFM-android/GardasFM-android.apk
+          files: GardasFM-android.apk
           make_latest: true
