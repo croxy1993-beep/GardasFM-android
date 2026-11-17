@@ -66,7 +66,7 @@ object Engine {
     @Volatile var cid = 0
     @Volatile var shuffle = false
     @Volatile var repeat = 0          // 0 kapali, 1 hepsi, 2 tek sarki
-    @@Volatile var vol = 70
+    @Volatile var vol = 70
     val favs = mutableListOf<Item>()
     val recent = mutableListOf<Item>()
     val settings = JSONObject()
@@ -218,7 +218,7 @@ object Engine {
             "next" -> next()
             "prev" -> prev()
             "seek" -> seek(o.optDouble("f", 0.0))
-            "vol" -> setVol(o.optInt("v", 70))
+            "vol" -> setVolume(o.optInt("v", 70))
             "home" -> homeAction(o.optString("id"))
             "shuffle" -> shuffle = !shuffle
             "repeat" -> repeat = (repeat + 1) % 3
