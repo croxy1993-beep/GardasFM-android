@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gardaş FM</title>
+<style>
+@property --a{syntax:'<color>';inherits:true;initial-value:#ff4f8b}
+@property --b{syntax:'<color>';inherits:true;initial-value:#4db8ff}
+:root{--a:#ff4f8b;--b:#4db8ff;--bg:#0a0720;--text:#f3f0ff;--soft:#b9b3e0;--muted:#8a85b5;transition:--a 1s ease,--b 1s ease;color-scheme:dark}
+*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:"Segoe UI",system-ui,Roboto,Arial,sans-serif;overflow:hidden;user-select:none}
+input,textarea{user-select:text}
+body.a-hafif *{animation-duration:.01s!important}body.a-hafif .amb{transition:none!important}
+body.a-kapali *{animation:none!important;transition:none!important}
+.amb{position:fixed;inset:-25%;z-index:0;background-size:cover;background-position:center;filter:blur(80px) saturate(1.5) brightness(.75);transform:scale(1.15);transition:opacity 1.5s ease;opacity:0}
+.noise{position:fixed;inset:0;z-index:1;background:radial-gradient(circle at 50% 40%,transparent 30%,rgba(5,3,15,.7));pointer-events:none}
+.app{position:relative;z-index:2;display:grid;grid-template-columns:240px 1fr 350px;grid-template-rows:minmax(0,1fr) 92px;gap:14px;height:100%;padding:14px}
+.glass{position:relative;border-radius:24px;background:rgba(20,14,48,.55);backdrop-filter:blur(22px) saturate(1.4);box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.glass::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.5px;background:linear-gradient(160deg,var(--a),var(--b));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.75;pointer-events:none}
+.rail,.main,.np,.player{animation:pop .8s 2.3s cubic-bezier(.2,.9,.2,1) both}.main{animation-delay:2.4s}.np{animation-delay:2.5s}.player{animation-delay:2.6s}
+.rail{padding:20px 12px 12px;display:flex;flex-direction:column;min-height:0}
+.brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.08em;font-size:1.25rem;margin:0 8px 2px;background:linear-gradient(90deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand img{width:30px;height:30px;border-radius:8px;-webkit-text-fill-color:initial}
+.hello{font-size:.8rem;color:var(--muted);margin:0 8px 14px}
+.nav{flex:1;overflow:auto;scrollbar-width:thin;min-height:0}
+.nav button,.foot button{position:relative;display:flex;justify-content:space-between;width:100%;height:40px;margin-bottom:3px;text-align:left;padding:0 14px;align-items:center;border:1.5px solid transparent;background:none;color:var(--soft);font-family:inherit;font-size:.93rem;font-weight:600;border-radius:13px;cursor:pointer;transition:color .3s,transform .3s,background .3s,border-color .3s}
+.nav button small{color:var(--muted);font-weight:400}
+.nav button:hover,.foot button:hover{color:#fff;transform:translateX(4px)}
+.nav button.on,.foot button.on{color:#fff;border-color:var(--a);background:color-mix(in srgb,var(--a) 18%,transparent);box-shadow:0 0 20px color-mix(in srgb,var(--a) 40%,transparent)}
+.nav .grp{font-size:.7rem;letter-spacing:.14em;color:var(--muted);margin:14px 10px 6px;user-select:none}.nav .grp.fold{cursor:pointer}
+.nav .grp.col::after{content:" ▸"}.nav .grp.opn::after{content:" ▾"}
+.foot{border-top:1px solid rgba(255,255,255,.1);padding-top:8px;margin-top:6px}.foot button{height:36px;font-size:.88rem}
+.main{padding:22px 24px;display:flex;flex-direction:column;min-width:0;min-height:0}
+.head{display:flex;align-items:center;gap:18px;margin-bottom:14px}.head h1{font-size:2rem;font-weight:900;white-space:nowrap}
+.head input{margin-left:auto;width:100%;max-width:360px;height:42px;border-radius:21px;border:1.5px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#fff;padding:0 18px;font:inherit;outline:none;transition:.3s}
+.head input:focus{border-color:var(--b);box-shadow:0 0 0 4px color-mix(in srgb,var(--b) 22%,transparent)}
+.views{flex:1;min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:var(--b) transparent}
+.view-anim{animation:viewIn .6s cubic-bezier(.2,.9,.2,1) both}
+@keyframes viewIn{from{opacity:0;transform:translateY(22px) scale(.985);filter:blur(5px)}to{opacity:1;transform:none;filter:none}}
+@keyframes pop{from{opacity:0;transform:translateY(30px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes rowIn{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:none}}
+.row{display:grid;grid-template-columns:30px 1fr 150px 50px 32px 32px 32px 32px;align-items:center;gap:8px;padding:9px 12px;border-radius:14px;cursor:pointer;color:var(--soft);transition:background .3s,transform .3s;animation:rowIn .55s calc(var(--i)*35ms) cubic-bezier(.2,.9,.2,1) both}
+.row:hover{background:rgba(255,255,255,.07);transform:translateX(6px);color:#fff}
+.row.cur{background:linear-gradient(90deg,color-mix(in srgb,var(--a) 32%,transparent),transparent);color:#fff;font-weight:600;box-shadow:inset 3px 0 var(--a)}
+.row.over{outline:2px dashed var(--b)}
+.row .n{color:var(--muted);font-size:.85rem}.row>div:nth-child(2),.row>div:nth-child(3){white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.row>div:nth-child(3){font-size:.88rem}
+.chip{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:9px;font-size:.7rem;background:color-mix(in srgb,var(--b) 25%,transparent);color:var(--b);font-weight:600}
+.ib{border:0;background:none;color:var(--muted);font-size:1.05rem;cursor:pointer;border-radius:10px;height:30px;transition:transform .25s cubic-bezier(.34,1.56,.64,1),color .2s}
+.ib:hover{transform:scale(1.25);color:#fff}.ib.fav{color:var(--a);text-shadow:0 0 12px var(--a)}.ib.on{color:var(--b)}
+.empty{color:var(--muted);padding:40px;text-align:center}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
+.card{position:relative;height:120px;border-radius:20px;padding:16px;cursor:pointer;overflow:hidden;transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .35s;animation:rowIn .6s calc(var(--i)*70ms) cubic-bezier(.2,.9,.2,1) both;color:#fff}
+.card:hover{transform:translateY(-6px) scale(1.03);box-shadow:0 18px 40px rgba(0,0,0,.45)}.card b{display:block;font-size:1.08rem}.card span{font-size:.82rem;opacity:.9}
+.sec{margin:20px 4px 10px;font-size:.75rem;letter-spacing:.14em;color:var(--muted)}
+.tools{display:flex;gap:10px;margin:0 4px 12px;flex-wrap:wrap}
+.tb{height:36px;padding:0 16px;border-radius:18px;border:1.5px solid color-mix(in srgb,var(--b) 60%,transparent);background:rgba(255,255,255,.05);color:#fff;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;transition:.25s}
+.tb:hover{background:rgba(255,255,255,.14);transform:translateY(-2px)}.tb.pri{background:var(--a);border-color:transparent;box-shadow:0 0 22px color-mix(in srgb,var(--a) 55%,transparent)}.tb.on{border-color:var(--a);background:color-mix(in srgb,var(--a) 25%,transparent)}
+.pcard{border-radius:20px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);padding:20px 22px;margin:0 4px 16px;animation:viewIn .6s both}
+.pcard h3{font-size:.78rem;letter-spacing:.14em;color:var(--a);margin-bottom:12px}
+.srow{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:11px 0;border-top:1px solid rgba(255,255,255,.07)}.srow:first-of-type{border-top:0}
+.srow small{display:block;color:var(--muted);font-size:.78rem;margin-top:2px;max-width:420px}
+.sw{position:relative;width:46px;height:26px;border-radius:13px;background:rgba(255,255,255,.18);cursor:pointer;transition:.3s;flex:0 0 auto}.sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.3s cubic-bezier(.34,1.56,.64,1)}
+.sw.on{background:var(--a);box-shadow:0 0 16px color-mix(in srgb,var(--a) 60%,transparent)}.sw.on::after{left:23px}
+.seg{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.seg button{height:32px;padding:0 14px;border-radius:16px;border:1.5px solid rgba(255,255,255,.18);background:none;color:var(--soft);font-family:inherit;font-size:.83rem;cursor:pointer;transition:.25s}.seg button.on{border-color:var(--a);color:#fff;background:color-mix(in srgb,var(--a) 22%,transparent)}
+.in{height:36px;border-radius:12px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#fff;padding:0 12px;font:inherit;outline:none;min-width:200px}
+.big{font-size:1.9rem;font-weight:900;margin:4px 0}.avatar{width:84px;height:84px;border-radius:50%;object-fit:cover;border:2px solid var(--a)}
+.np{padding:22px;display:flex;flex-direction:column;align-items:center;min-height:0}
+.stagebox{position:relative;width:200px;height:200px;margin:8px 0 16px;flex:0 0 auto}
+#viz{position:absolute;inset:-60px;width:320px;height:320px;pointer-events:none}
+.cover{position:absolute;inset:0;border-radius:26px;display:grid;place-items:center;font-size:4rem;overflow:hidden;background:linear-gradient(135deg,var(--a),var(--b));transition:transform .15s ease-out;box-shadow:0 20px 60px color-mix(in srgb,var(--a) 50%,transparent)}
+.cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .8s}.cover img.on{opacity:1}
+.ntitle{display:flex;align-items:center;gap:6px;max-width:100%}.np h2{font-size:1.15rem;text-align:center;max-height:3.2em;overflow:hidden}.np .art{color:var(--b);font-size:.95rem;margin:2px 0 8px}
+.lyr{flex:1;min-height:0;width:100%;overflow:hidden;position:relative;mask-image:linear-gradient(transparent,#000 22%,#000 78%,transparent);-webkit-mask-image:linear-gradient(transparent,#000 22%,#000 78%,transparent)}
+.lyr-in{transition:transform .7s cubic-bezier(.2,.9,.2,1)}
+.lyr-in div{padding:7px 4px;text-align:center;font-size:.98rem;color:var(--muted);filter:blur(1px);transition:all .5s cubic-bezier(.2,.9,.2,1)}
+.lyr-in div.on{color:var(--b);font-weight:800;font-size:1.22rem;filter:none;text-shadow:0 0 18px color-mix(in srgb,var(--b) 60%,transparent)}.lyr-in.plain div{filter:none;color:var(--soft)}
+.player{grid-column:1/-1;display:flex;align-items:center;gap:20px;padding:0 26px}
+.pinfo{width:210px;min-width:0}.pinfo b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pinfo span{font-size:.82rem;color:var(--muted)}
+.ctl{display:flex;align-items:center;gap:10px}
+.ctl button{width:42px;height:42px;border-radius:14px;border:1.5px solid color-mix(in srgb,var(--b) 70%,transparent);background:rgba(255,255,255,.05);color:#fff;font-size:1rem;cursor:pointer;transition:transform .25s cubic-bezier(.34,1.56,.64,1),background .25s}
+.ctl button:hover{transform:scale(1.12);background:rgba(255,255,255,.12)}.ctl button:active{transform:scale(.92)}
+.ctl .pp{width:56px;height:56px;border-radius:50%;border:0;background:var(--a);font-size:1.25rem;box-shadow:0 0 26px color-mix(in srgb,var(--a) 70%,transparent)}
+.ctl .sm{width:36px;height:36px;border-color:rgba(255,255,255,.2);font-size:.9rem}.ctl .sm.on{border-color:var(--a);color:var(--a);box-shadow:0 0 14px color-mix(in srgb,var(--a) 50%,transparent)}
+.prog{flex:1;display:flex;align-items:center;gap:12px;font-size:.82rem;color:var(--soft)}
+.track{position:relative;flex:1;height:6px;border-radius:9px;background:rgba(255,255,255,.14);cursor:pointer}
+.track i{position:absolute;left:0;top:0;bottom:0;border-radius:9px;background:linear-gradient(90deg,var(--a),var(--b))}
+.track u{position:absolute;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#fff;box-shadow:0 0 14px var(--b);transition:transform .2s}.track:hover u{transform:scale(1.35)}
+input[type=range]{accent-color:var(--b);width:90px}
+.toast{position:fixed;left:50%;bottom:122px;z-index:120;padding:12px 22px;border-radius:999px;background:rgba(20,14,48,.94);border:1.5px solid var(--a);transform:translate(-50%,30px);opacity:0;transition:.45s cubic-bezier(.34,1.56,.64,1);pointer-events:none}.toast.show{opacity:1;transform:translate(-50%,0)}
+.pm{position:fixed;z-index:110;min-width:190px;max-height:340px;overflow:auto;border-radius:16px;background:rgba(18,12,44,.97);border:1px solid rgba(255,255,255,.14);padding:6px;display:none;box-shadow:0 16px 40px rgba(0,0,0,.5)}
+.pm div{padding:9px 14px;border-radius:10px;font-size:.9rem;color:var(--soft);cursor:pointer}.pm div:hover{background:rgba(255,255,255,.1);color:#fff}.pm div.sep{height:1px;padding:0;margin:4px 8px;background:rgba(255,255,255,.12);cursor:default}.pm div.hd{font-size:.7rem;letter-spacing:.12em;color:var(--muted);cursor:default}.pm div.hd:hover{background:none;color:var(--muted)}
+.ov{position:fixed;inset:0;z-index:130;display:none;place-items:center;background:rgba(5,3,15,.82);backdrop-filter:blur(12px)}.ov.on{display:grid}
+.obox{width:min(460px,92vw);padding:28px;border-radius:24px;background:rgba(22,15,52,.98);border:1.5px solid var(--a);box-shadow:0 24px 70px rgba(0,0,0,.6);text-align:center;animation:pop .5s both}
+.obox img{width:84px;height:84px;border-radius:20px;margin-bottom:8px}.obox h2{font-size:1.5rem;margin-bottom:6px}.obox p{color:var(--soft);font-size:.92rem;line-height:1.6;margin:6px 0}.obox .bt{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.obox ul{text-align:left;margin:10px 0 0 18px;color:var(--soft);font-size:.88rem;line-height:1.6}
+.pb{height:8px;border-radius:6px;background:rgba(255,255,255,.14);margin:14px 0 4px;overflow:hidden}.pb i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--b));transition:width .4s}
+#dlg .obox{text-align:left}#dlg input{width:100%;height:42px;border-radius:14px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#fff;padding:0 14px;font:inherit;outline:none;margin:8px 0}
+#fs{position:fixed;inset:0;z-index:100;display:none;background:rgba(6,4,18,.94);backdrop-filter:blur(30px);overflow:hidden}#fs.on{display:block;animation:viewIn .5s both}
+#fs .fl{position:absolute;inset:70px 8% 60px 8%;overflow:hidden;mask-image:linear-gradient(transparent,#000 25%,#000 75%,transparent);-webkit-mask-image:linear-gradient(transparent,#000 25%,#000 75%,transparent)}
+#fs .lyr-in div{font-size:2rem;padding:14px 0;color:var(--muted);filter:blur(2px);text-align:center}#fs .lyr-in div.on{font-size:3.2rem;font-weight:900;color:var(--b);filter:none;text-shadow:0 0 30px color-mix(in srgb,var(--b) 60%,transparent)}
+#fs .ft{position:absolute;top:22px;left:0;right:0;text-align:center;color:var(--soft)}#fs .x{position:absolute;top:14px;right:22px;font-size:1.6rem}
+.lost{position:fixed;inset:0;z-index:300;display:none;place-items:center;background:rgba(5,3,15,.9);text-align:center;color:var(--soft);line-height:1.8}
+/* açılış animasyonu */
+#splash{position:fixed;inset:0;z-index:500;display:grid;place-items:center;background:radial-gradient(circle at 50% 45%,#1a1040 0%,#070416 70%);overflow:hidden;transition:opacity .9s ease,transform .9s ease,filter .9s}
+#splash.out{opacity:0;transform:scale(1.08);filter:blur(10px);pointer-events:none}
+.sp-in{position:relative;display:flex;flex-direction:column;align-items:center}
+.sp-glow{position:absolute;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--a) 45%,transparent),transparent 65%);filter:blur(30px);animation:glow 3s ease-in-out infinite alternate}
+@keyframes glow{from{transform:scale(.8);opacity:.5}to{transform:scale(1.15);opacity:1}}
+.sp-ring{position:absolute;top:50%;left:50%;width:240px;height:240px;margin:-130px 0 0 -120px;border-radius:50%;border:2px solid var(--a);opacity:0;animation:ring 2.4s cubic-bezier(.2,.7,.3,1) infinite}.sp-ring.r2{border-color:var(--b);animation-delay:.8s}.sp-ring.r3{animation-delay:1.6s}
+@keyframes ring{0%{transform:scale(.6);opacity:.9}100%{transform:scale(2.6);opacity:0}}
+.sp-wrap{position:relative;width:230px;height:230px;border-radius:46px;overflow:hidden;animation:logoIn 1.7s cubic-bezier(.2,.9,.2,1) both;box-shadow:0 0 80px color-mix(in srgb,var(--a) 55%,transparent),0 0 0 1.5px rgba(255,255,255,.2)}
+.sp-wrap img{width:100%;height:100%;display:block;object-fit:cover}
+.sp-wrap::after{content:"";position:absolute;inset:-20%;background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.75) 50%,transparent 62%);transform:translateX(-130%);animation:sweep 1.5s 1s ease-in-out forwards}
+@keyframes logoIn{0%{opacity:0;transform:scale(.45) rotate(-12deg);filter:blur(28px) brightness(2.2)}55%{opacity:1;filter:blur(0) brightness(1.35)}100%{opacity:1;transform:none;filter:none}}
+@keyframes sweep{to{transform:translateX(130%)}}
+.sp-text{position:relative;margin-top:34px;font-size:2.2rem;font-weight:900;letter-spacing:.22em;display:flex;gap:2px}
+.sp-text span{opacity:0;transform:translateY(24px);background:linear-gradient(90deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent;animation:letter .6s cubic-bezier(.2,.9,.2,1) forwards}
+@keyframes letter{to{opacity:1;transform:none}}
+.sp-sub{position:relative;margin-top:8px;color:var(--muted);font-size:.9rem;letter-spacing:.3em;opacity:0;animation:letter .8s 2s forwards}
+.sp-bar{position:relative;width:240px;height:4px;margin-top:26px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}.sp-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--b));animation:load 2.6s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes load{to{width:100%}}
+@media(max-width:1100px){.app{grid-template-columns:210px 1fr}.np{display:none}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head><body>
+<div id="splash"><div class="sp-in"><div class="sp-glow"></div><div class="sp-ring"></div><div class="sp-ring r2"></div><div class="sp-ring r3"></div>
+ <div class="sp-wrap"><img id="splogo" alt=""></div><div class="sp-text" id="sptext"></div><div class="sp-sub">MÜZİĞİN NEON EVİ</div><div class="sp-bar"><i></i></div></div></div>
+<div class="amb" id="amb1"></div><div class="amb" id="amb2"></div><div class="noise"></div>
+<div class="app">
+ <aside class="glass rail"><div class="brand"><img id="brandlogo" alt="">GARDAŞ FM</div><div class="hello" id="hello"></div><div class="nav" id="nav"></div>
+  <div class="foot"><button data-go="profile">☺&nbsp; Profil</button><button data-go="settings">⚙&nbsp; Ayarlar</button><button data-go="help">?&nbsp; Kısayollar</button><button id="bq">⏻&nbsp; Çıkış</button></div></aside>
+ <main class="glass main"><div class="head"><h1 id="title">Ana sayfa</h1><input id="q" placeholder="Şarkı ya da sanatçı ara, Enter'a bas..." autocomplete="off"></div><div class="views" id="views"></div></main>
+ <aside class="glass np"><div class="stagebox"><canvas id="viz" width="640" height="640"></canvas><div class="cover" id="cover"><span id="ph">🎧</span><img id="cimg" alt=""></div></div>
+  <div class="ntitle"><h2 id="ntitle">Bir şarkı seç</h2><button class="ib" id="nfav" title="Favori">♡</button><button class="ib" id="nfs" title="Tam ekran sözler (L)">⛶</button></div><div class="art" id="nart"></div><div class="lyr"><div class="lyr-in" id="lyr"></div></div></aside>
+ <footer class="glass player"><div class="pinfo"><b id="ptitle">—</b><span id="part"></span></div>
+  <div class="ctl"><button class="sm" id="shuf" title="Karışık">⇄</button><button id="prev">⏮</button><button class="pp" id="pp">▶</button><button id="next">⏭</button><button class="sm" id="rep" title="Tekrar">↻</button></div>
+  <div class="prog"><span id="tcur">0:00</span><div class="track" id="track"><i id="fill"></i><u id="knob"></u></div><span id="ttot">0:00</span></div>
+  <div class="ctl"><button class="sm" id="slp" title="Uyku zamanlayıcı">☾</button><button class="sm" id="eqb" title="Ekolayzer ve hız">♫</button></div><input type="range" id="vol" min="0" max="100" value="70" title="Ses"></footer>
+</div>
+<div id="fs"><div class="ft" id="fst"></div><button class="ib x" id="fsx">✕</button><div class="fl"><div class="lyr-in" id="lyr2"></div></div></div>
+<div class="pm" id="pm"></div><div class="toast" id="toast"></div>
+<div class="ov" id="dlg"><div class="obox"><div id="dt"></div><input id="di"><div class="bt"><button class="tb" id="dno">İptal</button><button class="tb pri" id="dok">Tamam</button></div></div></div>
+<div class="ov" id="updov"><div class="obox"><img class="ulogo" alt=""><h2>Yeni sürüm geldi!</h2><p id="updv"></p><ul id="updn"></ul><p id="updm"></p><div class="pb"><i id="updp"></i></div><div class="bt" id="updb"></div></div></div>
+<div class="ov" id="logov"><div class="obox"><img class="ulogo" alt=""><h2 id="lgt">Devam etmek için Discord ile giriş yap</h2><p id="lgd"></p><p id="lgm" style="color:var(--a)"></p><div class="bt" id="lgb"></div></div></div>
+<div class="lost" id="lost"><div><h2>Bağlantı koptu</h2>Gardaş FM çalışıyor mu? Kapatıp yeniden aç.</div></div>
+<script>
+var foundShown="",T=new URLSearchParams(location.search).get("t"),st=null,t0=performance.now(),lastKey="",lastCid=-1,lastLs=-1,amb=1,fails=0,curView="home",curList="",volDrag=0,lyrOn=-2,searchGen=0,navLists=[],collapsed={cat:1},splashT=performance.now(),splashDone=0,dlgCb=null,catOpen=0;
+function $(i){return document.getElementById(i)}
+function api(p){return fetch(p+(p.indexOf("?")>-1?"&":"?")+"t="+T).then(function(r){return r.json().catch(function(){return {}}).then(function(j){if(!r.ok)throw j;return j})})}
+function cmd(o){return fetch("/api/cmd?t="+T,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(o)})}
+function fmt(s){s=Math.max(0,Math.floor(s||0));return Math.floor(s/60)+":"+("0"+s%60).slice(-2)}
+function rgb(c){return "rgb("+c[0]+","+c[1]+","+c[2]+")"}
+function esc(x){return String(x==null?"":x).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function toast(t){var e=$("toast");e.textContent=t;e.classList.add("show");clearTimeout(toast.h);toast.h=setTimeout(function(){e.classList.remove("show")},2200)}
+var grads=["#ff4f8b,#7a3cff","#4db8ff,#2ec4b6","#ffb020,#ff4f8b","#7ee0ff,#5b8cff","#3ddc97,#4db8ff","#ff7a45,#ffd23f","#a78bfa,#f9a8d4","#00e5ff,#ff4fd8"];
+/* ---------- açılış ---------- */
+(function(){var lg="/api/logo?t="+T;$("splogo").src=lg;$("brandlogo").src=lg;document.querySelectorAll(".ulogo").forEach(function(i){i.src=lg});
+ var l=document.createElement("link");l.rel="icon";l.href=lg;document.head.appendChild(l);
+ "GARDAŞ FM".split("").forEach(function(c,i){var s=document.createElement("span");s.textContent=c===" "?"\u00a0":c;s.style.animationDelay=(1.1+i*.09)+"s";$("sptext").appendChild(s)})})();
+function endSplash(){if(splashDone)return;splashDone=1;var d=Math.max(0,2700-(performance.now()-splashT));setTimeout(function(){$("splash").classList.add("out");setTimeout(function(){$("splash").style.display="none"},950)},d)}
+/* ---------- menü ---------- */
+function showMenu(x,y,items){var pm=$("pm");pm.innerHTML=items.map(function(it,i){return it==="-"?'<div class="sep"></div>':it.h?'<div class="hd">'+esc(it.h)+'</div>':'<div data-i="'+i+'">'+esc(it.t)+'</div>'}).join("");
+  pm.style.display="block";pm.style.left=Math.max(8,Math.min(x,innerWidth-230))+"px";pm.style.top=Math.max(8,Math.min(y,innerHeight-360))+"px";
+  pm.querySelectorAll("div[data-i]").forEach(function(d){d.onclick=function(e){e.stopPropagation();pm.style.display="none";items[+d.dataset.i].fn()}})}
+document.addEventListener("click",function(e){if(!e.target.closest(".pm")&&!e.target.closest("[data-menu]"))$("pm").style.display="none"});
+function askText(t,cb,init){$("dt").textContent=t;$("di").style.display="";$("di").value=init||"";dlgCb=cb;$("dlg").classList.add("on");setTimeout(function(){$("di").focus()},50)}
+function askYes(t,cb){$("dt").textContent=t;$("di").style.display="none";dlgCb=cb;$("dlg").classList.add("on")}
+$("dok").onclick=function(){var v=$("di").value;$("dlg").classList.remove("on");if(dlgCb)dlgCb(v)};$("dno").onclick=function(){$("dlg").classList.remove("on");dlgCb=null};
+$("di").onkeydown=function(e){if(e.key==="Enter")$("dok").click()};
+/* ---------- kenar menü ---------- */
+function setNav(n){document.querySelectorAll("#nav button,.foot button[data-go]").forEach(function(b){b.classList.toggle("on",b.dataset.n===n||b.dataset.go===n)})}
+function loadNav(){api("/api/lists").then(function(ls){navLists=ls;var g={lib:[],pl:[],cat:[]};ls.forEach(function(l){(l.g==0?g.lib:l.g==1?g.pl:g.cat).push(l)});
+  function btn(l){return '<button data-n="'+esc(l.n)+'" data-l="'+esc(l.label)+'">'+esc(l.label)+'<small>'+l.c+'</small></button>'}
+  $("nav").innerHTML='<button data-n="__ana">⌂&nbsp; Ana sayfa</button><button data-n="__bul">♫&nbsp; Şarkı bul</button><div class="grp">KÜTÜPHANE</div>'+g.lib.map(btn).join("")+'<div class="grp">LİSTELERİM</div>'+g.pl.map(btn).join("")+'<button data-new="1">＋&nbsp; Yeni liste</button><div class="grp fold '+(collapsed.cat?"col":"opn")+'" id="gcat">KEŞFET</div><div id="catbox" style="display:'+(collapsed.cat?"none":"block")+'">'+g.cat.map(btn).join("")+'</div>';
+  $("gcat").onclick=function(){collapsed.cat=collapsed.cat?0:1;$("catbox").style.display=collapsed.cat?"none":"block";this.className="grp fold "+(collapsed.cat?"col":"opn")};
+  document.querySelectorAll("#nav button").forEach(function(b){b.onclick=function(){if(b.dataset.new){newList(null);return}if(b.dataset.n==="__ana")showHome();else if(b.dataset.n==="__bul")showFind();else showList(b.dataset.n,b.dataset.l)}});setNav(curView==="list"?curList:curView==="home"?"__ana":curView==="find"?"__bul":curView)})}
+document.querySelectorAll(".foot button[data-go]").forEach(function(b){b.onclick=function(){var g=b.dataset.go;if(g==="settings")showSettings();else if(g==="profile")showProfile();else showHelp()}});
+function newList(add){askText("Yeni liste adı",function(n){if(!n||!n.trim())return;cmd(Object.assign({cmd:"new_list",name:n.trim()},add||{})).then(function(){toast("Liste oluşturuldu");setTimeout(loadNav,700)})})}
+/* ---------- ana sayfa ---------- */
+function showHome(){curView="home";$("title").textContent="Ana sayfa";setNav("__ana");
+  api("/api/home").then(function(cs){var h='<div class="sec">HIZLI BAŞLA</div><div class="cards view-anim">'+cs.map(function(c,i){return '<div class="card" style="--i:'+i+';background:linear-gradient(135deg,'+grads[i%grads.length]+')" data-id="'+esc(c.id)+'"><b>'+esc(c.t)+'</b><span>'+esc(c.s)+'</span></div>'}).join("")+'</div><div class="sec">LİSTELERİN</div><div class="cards view-anim" id="lcards"></div>';
+    $("views").innerHTML=h;document.querySelectorAll("#views .card[data-id]").forEach(function(c){c.onclick=function(){cmd({cmd:"home",id:c.dataset.id});toast("Hazırlanıyor...")}});
+    api("/api/lists").then(function(ls){$("lcards").innerHTML=ls.filter(function(l){return l.c>0}).slice(0,12).map(function(l,i){return '<div class="card" style="--i:'+i+';background:linear-gradient(135deg,'+grads[(i+3)%grads.length]+')" data-n="'+esc(l.n)+'" data-l="'+esc(l.label)+'"><b>'+esc(l.label)+'</b><span>'+l.c+' şarkı</span></div>'}).join("");
+      document.querySelectorAll("#lcards .card").forEach(function(c){c.onclick=function(){showList(c.dataset.n,c.dataset.l)}})})})}
+/* ---------- listeler ---------- */
+function rowsHtml(rows,n,reord){return rows.length?rows.map(function(r,i){return '<div class="row" '+(reord?'draggable="true" ':'')+'style="--i:'+Math.min(i,24)+'" data-i="'+i+'" data-s="'+esc((r.t+" "+r.a+" "+(r.g||[]).join(" ")).toLowerCase())+'" data-t="'+esc(r.t)+'" data-a="'+esc(r.a)+'"><div class="n">'+(i+1)+'</div><div>'+esc(r.t)+(r.g||[]).map(function(x){return '<span class="chip">#'+esc(x)+'</span>'}).join("")+'</div><div>'+esc(r.a)+'</div><div>'+(r.d?fmt(r.d):"")+'</div><button class="ib fav" data-f="'+(r.f?1:0)+'" title="Favori">'+(r.f?"♥":"♡")+'</button><button class="ib" data-q="1" title="Sıraya ekle">＋</button><button class="ib" data-d="1" title="İndir">⬇</button><button class="ib" data-m="1" data-menu="1" title="Diğer">⋯</button></div>'}).join(""):'<div class="empty">Burada şarkı yok.</div>'}
+function rowMenu(e,n,i,r){var items=[{t:"◉  Radyo başlat",fn:function(){cmd({cmd:"radio_row",n:n,i:i});toast("Radyo hazırlanıyor...")}},{t:"#  Etiketler...",fn:function(){askText("Etiketler (virgülle ayır)",function(v){cmd({cmd:"tag",n:n,i:i,tags:v});toast("Etiketler kaydedildi");setTimeout(function(){reloadList(n)},500)},(r.g||[]).join(", "))}},"-",{h:"LİSTEYE EKLE"},{t:"♥  Favorilerim",fn:function(){cmd({cmd:"add_to_list",n:n,i:i,t:"Favorilerim"});toast("Eklendi")}}];
+  navLists.filter(function(l){return l.g==1}).forEach(function(l){items.push({t:l.label,fn:function(){cmd({cmd:"add_to_list",n:n,i:i,t:l.n});toast("Listeye eklendi")}})});
+  items.push({t:"＋  Yeni liste...",fn:function(){newList({add_n:n,add_i:i})}});showMenu(e.clientX,e.clientY,items)}
+var curRows=[];
+function bindRows(n,reord){document.querySelectorAll(".row").forEach(function(r){var i=+r.dataset.i;r.onclick=function(e){var b=e.target.closest("button");
+    if(b&&b.dataset.q){cmd({cmd:"enqueue",n:n,i:i});toast("Sıraya eklendi");return}
+    if(b&&b.dataset.d){cmd({cmd:"dl_row",n:n,i:i});toast("İndirme başladı");return}
+    if(b&&b.dataset.m){rowMenu(e,n,i,curRows[i]||{});return}
+    if(b&&b.dataset.f!==undefined){cmd({cmd:"fav_row",n:n,i:i});var on=b.dataset.f==="1";b.dataset.f=on?0:1;b.textContent=on?"♡":"♥";b.classList.toggle("fav",!on);toast(on?"Favorilerden çıkarıldı":"Favorilere eklendi");return}
+    cmd({cmd:"play_list",n:n,i:i})};
+  r.oncontextmenu=function(e){e.preventDefault();rowMenu(e,n,i,curRows[i]||{})};
+  if(reord){r.ondragstart=function(e){e.dataTransfer.setData("text/plain",String(i));e.dataTransfer.effectAllowed="move"};r.ondragover=function(e){e.preventDefault();r.classList.add("over")};r.ondragleave=function(){r.classList.remove("over")};
+    r.ondrop=function(e){e.preventDefault();r.classList.remove("over");var from=+e.dataTransfer.getData("text/plain");if(from!==i){cmd({cmd:"move",n:n,i:from,j:i});setTimeout(function(){reloadList(n)},400)}}}});
+  document.querySelectorAll(".row .ib[data-f]").forEach(function(b){b.classList.toggle("fav",b.dataset.f==="1")});markCur()}
+function listTools(n,reord,pl){return '<div class="tools"><button class="tb pri" id="tpl">▶ Hepsini çal</button><button class="tb" id="tdl">⬇ Bu listeyi indir</button><button class="tb" id="tmore" data-menu="1">⋯ Daha fazla</button></div>'}
+function bindTools(n){$("tpl").onclick=function(){cmd({cmd:"play_list",n:n,i:0})};$("tdl").onclick=function(){cmd({cmd:"dl_list",n:n});toast("Liste indiriliyor...")};
+  $("tmore").onclick=function(e){var r=e.target.getBoundingClientRect();showMenu(r.left,r.bottom+6,[{t:"Listeyi paylaş (.gfm)",fn:function(){cmd({cmd:"export",n:n,kind:"gfm"})}},{t:"Metin dosyası olarak kaydet (.txt)",fn:function(){cmd({cmd:"export",n:n,kind:"txt"})}},{t:"M3U olarak kaydet",fn:function(){cmd({cmd:"export",n:n,kind:"m3u"})}},{t:"Dosyadan liste içe aktar (.gfm)",fn:function(){cmd({cmd:"import_gfm"});setTimeout(loadNav,2500)}},{t:"Tekrar edenleri temizle",fn:function(){cmd({cmd:"dedupe",n:n});setTimeout(function(){reloadList(n);loadNav()},700)}}])}}
+function reloadList(n){if(curView==="list"&&curList===n)api("/api/list?n="+encodeURIComponent(n)).then(function(rows){curRows=rows;var y=$("views").scrollTop;$("views").innerHTML=listTools(n)+'<div>'+rowsHtml(rows,n,isReord(n))+'</div>';bindTools(n);bindRows(n,isReord(n));$("views").scrollTop=y})}
+function isReord(n){var l=navLists.filter(function(x){return x.n===n})[0];return !!(l&&l.r)}
+function showList(n,label){curView="list";curList=n;$("title").textContent=label;$("q").value="";setNav(n);
+  api("/api/list?n="+encodeURIComponent(n)).then(function(rows){curRows=rows;$("views").innerHTML='<div class="view-anim">'+listTools(n)+rowsHtml(rows,n,isReord(n))+'</div>';bindTools(n);bindRows(n,isReord(n))})}
+function markCur(){if(!st)return;document.querySelectorAll(".row").forEach(function(r){r.classList.toggle("cur",r.dataset.t===st.title&&r.dataset.a===st.artist)})}
+/* ---------- arama / şarkı bul ---------- */
+function doSearch(q){q=q.trim();if(q.length<2)return;curView="search";curList="__ara";$("title").textContent="Arama: "+q;setNav("");var g=++searchGen;$("views").innerHTML='<div class="empty">Aranıyor...</div>';
+  api("/api/search?q="+encodeURIComponent(q)).then(function(rows){if(g!==searchGen)return;curRows=rows;$("views").innerHTML='<div class="view-anim">'+rowsHtml(rows,"__ara",false)+'</div>';bindRows("__ara",false)}).catch(function(){$("views").innerHTML='<div class="empty">Arama yapılamadı.</div>'})}
+$("q").onkeydown=function(e){if(e.key==="Enter")doSearch(this.value)};
+$("q").oninput=function(){if(curView!=="list")return;var v=this.value.toLowerCase();document.querySelectorAll(".row").forEach(function(r){r.style.display=r.dataset.s.indexOf(v)>-1?"":"none"})};
+function showFind(){curView="find";$("title").textContent="Şarkı bul";setNav("__bul");
+  $("views").innerHTML='<div class="view-anim"><div class="pcard"><h3>SÖZDEN BUL</h3><p style="color:var(--soft);font-size:.9rem;margin-bottom:10px">Aklındaki birkaç kelimeyi yaz. Sonuçlar YouTube aramasından gelir.</p><div style="display:flex;gap:10px"><input class="in" id="fq" style="flex:1" placeholder="örnek: dün gece yine seni düşündüm"><button class="tb pri" id="fgo">Bul</button></div></div><div class="pcard"><h3>DİNLEYEREK BUL</h3><p style="color:var(--soft);font-size:.9rem;margin-bottom:10px">Çalan şarkıyı 12 saniye dinleyip tanır (AudD anahtarı gerekir: Ayarlar).</p><div class="seg" style="justify-content:flex-start;margin-bottom:10px"><button class="on" data-src="pc">Bilgisayarın sesi</button><button data-src="mic">Mikrofon</button></div><button class="tb pri" id="flisten">Dinlemeye başla</button><p id="fmsg" style="margin-top:10px;color:var(--b)"></p></div><div id="fres"></div></div>';
+  var src="pc";document.querySelectorAll(".seg button[data-src]").forEach(function(b){b.onclick=function(){src=b.dataset.src;document.querySelectorAll(".seg button[data-src]").forEach(function(x){x.classList.toggle("on",x===b)})}});
+  function go(){var q=$("fq").value.trim();if(q.length<6){toast("Biraz daha uzun bir söz yaz");return}$("fres").innerHTML='<div class="empty">Aranıyor...</div>';api("/api/find?q="+encodeURIComponent(q)).then(function(rows){curRows=rows;curList="__ara";$("fres").innerHTML=rowsHtml(rows,"__ara",false);bindRows("__ara",false)}).catch(function(){$("fres").innerHTML='<div class="empty">Arama yapılamadı.</div>'})}
+  $("fgo").onclick=go;$("fq").onkeydown=function(e){if(e.key==="Enter")go()};$("flisten").onclick=function(){cmd({cmd:"find_listen",src:src});$("fmsg").textContent="Dinleniyor..."}}
+/* ---------- profil ---------- */
+function showProfile(){curView="profile";$("title").textContent="Profil";setNav("profile");api("/api/profile").then(function(p){
+  $("views").innerHTML='<div class="view-anim"><div class="pcard"><div style="display:flex;gap:18px;align-items:center">'+(p.avatar?'<img class="avatar" src="/api/avatar?t='+T+'&v='+Date.now()+'">':'<div class="avatar" style="display:grid;place-items:center;font-size:2rem;background:rgba(255,255,255,.08)">☺</div>')+'<div><div class="big">'+esc(p.name)+'</div><div style="color:var(--b);font-weight:700">'+esc(p.status)+'</div><div style="color:var(--muted);font-size:.8rem">'+(p.id?"Discord kimliği: "+esc(p.id):"Giriş yapılmadı")+'</div></div></div><div class="tools" style="margin:14px 0 0"><button class="tb pri" id="plog">'+(p.id?"Hesabı yenile":"Discord ile giriş")+'</button><button class="tb" id="pout">Çıkış yap</button><button class="tb" id="pid">Kimliğimi kopyala</button></div></div>'+
+  '<div class="pcard"><h3>DİNLEME İSTATİSTİKLERİM</h3><div class="srow"><span>Toplam dinleme</span><b>'+esc(p.total)+'</b></div><div class="srow"><span>Bu ay</span><b>'+esc(p.month)+'</b></div>'+(p.artists.length?'<div class="srow"><span>En çok dinlenen sanatçı</span><b>'+esc(p.artists[0].a)+'</b></div>':'')+p.songs.map(function(s,i){return '<div class="srow"><span>'+(i+1)+'. '+esc(s.t)+'</span><b>'+s.n+' kez</b></div>'}).join("")+'<div class="tools" style="margin:12px 0 0"><button class="tb" id="pmc">Aylık özet resmini kaydet</button></div></div>'+
+  '<div class="pcard"><h3>KURUCULAR</h3>'+p.founders.map(function(f){return '<div class="srow"><b style="color:#ffc857">★ '+esc(f)+'</b></div>'}).join("")+'<small style="color:var(--muted)">Kurucu rozeti Discord kimliğine göre verilir. Diğer herkes “doğrulanmamış” görünür.</small></div></div>';
+  $("plog").onclick=function(){cmd({cmd:"login"});toast("Tarayıcıda Discord girişi açılıyor...")};$("pout").onclick=function(){askYes("Çıkış yapılsın mı? (tekrar giriş gerekir)",function(){cmd({cmd:"logout"})})};
+  $("pid").onclick=function(){if(navigator.clipboard&&p.id)navigator.clipboard.writeText(p.id).then(function(){toast("Kimlik kopyalandı")})};$("pmc").onclick=function(){cmd({cmd:"month_card"})}})}
+/* ---------- ayarlar ---------- */
+function showSettings(){curView="settings";$("title").textContent="Ayarlar";setNav("settings");api("/api/settings").then(function(s){var v=s.v,o=s.o;
+  function sw(k,t,d){return '<div class="srow"><div>'+t+(d?'<small>'+d+'</small>':'')+'</div><div class="sw'+(v[k]?" on":"")+'" data-sw="'+k+'"></div></div>'}
+  function sg(k,t,opts,d){return '<div class="srow"><div>'+t+(d?'<small>'+d+'</small>':'')+'</div><div class="seg">'+opts.map(function(x){return '<button data-sg="'+k+'" data-v="'+esc(x[0])+'" class="'+(String(v[k])===String(x[0])?"on":"")+'">'+esc(x[1])+'</button>'}).join("")+'</div></div>'}
+  function ac(id,t,d,b){return '<div class="srow"><div>'+t+(d?'<small>'+d+'</small>':'')+'</div><button class="tb" id="'+id+'">'+b+'</button></div>'}
+  $("views").innerHTML='<div class="view-anim">'+
+   '<div class="pcard"><h3>GÖRÜNÜM</h3>'+sg("theme","Renk teması",o.themes.map(function(x){return [x,x]}),"Kapak yokken kullanılan renkler")+sg("anim","Animasyon seviyesi",[["Tam","Tam"],["Hafif","Hafif"],["Kapalı","Kapalı"]],"Yavaş bilgisayarda Hafif ya da Kapalı seç")+sw("cover_color","Renkler çalan şarkının kapağından gelsin","Işıklar ve vurgu rengi kapakla değişir")+'</div>'+
+   '<div class="pcard"><h3>SES</h3>'+sg("fade","Şarkılar arası yumuşak geçiş",[[0,"Kapalı"],[2,"2 sn"],[4,"4 sn"],[6,"6 sn"]],"Şarkı bitmeden ses azalır, yenisi yavaşça açılır")+sw("song_vol_on","Şarkı başına ses ayarını hatırla","Bir şarkıdayken sesi değiştirirsen o şarkı sonra o sesle açılır")+'</div>'+
+   '<div class="pcard"><h3>BİLDİRİM VE ÇALIŞMA</h3>'+sw("notify","Şarkı değişince bildirim göster","Uygulama arkadayken köşede küçük kart çıkar")+sw("tray","Pencereyi kapatınca arka planda çalışmaya devam et","Kapalıysa pencereyi kapatmak uygulamayı kapatır")+sw("offline","Çevrimdışı mod","İnternete çıkmaz, sadece indirilenleri çalar")+sw("discord","Dinlediğim şarkı Discord durumumda görünsün","Gardaş FM dinliyor ve YouTube’da dinle düğmesi")+'</div>'+
+   '<div class="pcard"><h3>ŞARKI BULMA (AudD)</h3><div class="srow"><div>AudD anahtarı<small>Dinleyerek şarkı bulma için. audd.io’dan ücretsiz alınır. '+(s.audd?"Kayıtlı.":"")+'</small></div><div style="display:flex;gap:8px"><input class="in" id="aud" type="password" placeholder="anahtar"><button class="tb" id="audb">Kaydet</button></div></div></div>'+
+   '<div class="pcard"><h3>GÜNCELLEME VE YEDEK</h3>'+sw("auto_update","Açılışta yeni sürüm var mı diye bak","Günde bir kez")+ac("bupd","Güncellemeyi şimdi denetle","Gardaş FM v"+s.ver,"Denetle")+ac("bytd","yt-dlp’yi güncelle","YouTube değişirse çalma bozulmasın diye","Güncelle")+ac("bbak","Yedekle","Favoriler, listeler, ayarlar ve sözler tek .zip dosyası","Yedekle")+ac("bres","Yedekten geri yükle","Uygulama kapanıp açılır","Geri yükle")+'</div>'+
+   '<div class="pcard"><h3>HAKKINDA</h3><div class="srow"><div>Gardaş FM v'+s.ver+'<small>Veri klasörü: '+esc(s.data)+'</small></div></div>'+ac("bnew","Neler yeni?","","Göster")+ac("bdiag","Teşhis paketi oluştur","Hata olursa log ve sürüm bilgisi tek zip","Oluştur")+ac("bfold","Veri klasörünü aç","","Aç")+'</div></div>';
+  document.querySelectorAll("[data-sw]").forEach(function(e){e.onclick=function(){var k=e.dataset.sw,on=!e.classList.contains("on");e.classList.toggle("on",on);cmd({cmd:"set",k:k,v:on});if(k==="tray"||k==="offline"||k==="discord")toast("Kaydedildi")}});
+  document.querySelectorAll("[data-sg]").forEach(function(e){e.onclick=function(){var k=e.dataset.sg;document.querySelectorAll('[data-sg="'+k+'"]').forEach(function(x){x.classList.toggle("on",x===e)});var val=e.dataset.v;if(k==="fade")val=+val;cmd({cmd:"set",k:k,v:val}).then(function(){if(k==="anim"||k==="theme"||k==="cover_color")setTimeout(poll,200)})}});
+  $("audb").onclick=function(){cmd({cmd:"set",k:"audd_token",v:$("aud").value.trim()});toast("AudD anahtarı kaydedildi")};
+  $("bupd").onclick=function(){cmd({cmd:"upd_check"});toast("Denetleniyor...")};$("bytd").onclick=function(){cmd({cmd:"ytdlp"});toast("yt-dlp güncelleniyor...")};$("bbak").onclick=function(){cmd({cmd:"backup"})};
+  $("bres").onclick=function(){askYes("Yedekten geri yüklenecek, uygulama kapanıp açılacak. Devam?",function(){cmd({cmd:"restore"})})};
+  $("bnew").onclick=function(){api("/api/about").then(function(a){showNew(a)})};$("bdiag").onclick=function(){cmd({cmd:"diag"})};$("bfold").onclick=function(){cmd({cmd:"folder"})}})}
+function showNew(a){var h='<div class="view-anim">'+a.notes.map(function(n){return '<div class="pcard"><h3>SÜRÜM '+esc(n[0])+'</h3><ul style="margin-left:18px;color:var(--soft);line-height:1.7">'+n[1].map(function(x){return "<li>"+esc(x)+"</li>"}).join("")+'</ul></div>'}).join("")+'</div>';$("views").innerHTML=h;$("title").textContent="Neler yeni"}
+function showHelp(){curView="help";$("title").textContent="Kısayollar";setNav("help");var rows=[["Boşluk","Çal / duraklat"],["L","Tam ekran sözler (Esc ile kapat)"],["F1","Bu sayfa"],["Sağ tık / ⋯","Şarkı menüsü: radyo, etiket, listeye ekle"],["Sürükle-bırak","Favorilerde ve kendi listelerinde sıra değiştir"],["Ctrl + Tekerlek","Yakınlaştır / uzaklaştır"]];
+  $("views").innerHTML='<div class="view-anim"><div class="pcard">'+rows.map(function(r){return '<div class="srow"><b style="color:#ffc857;min-width:150px">'+r[0]+'</b><span style="flex:1">'+r[1]+'</span></div>'}).join("")+'</div></div>'}
+/* ---------- şimdi çalıyor ---------- */
+function renderLyrics(s){var L=s.lyrics||[],el=$("lyr");el.innerHTML=L.map(function(x,k){return '<div id="l'+k+'">'+esc(x)+'</div>'}).join("");el.classList.toggle("plain",!s.times);el.style.transform="";
+  $("lyr2").innerHTML=L.map(function(x,k){return '<div id="m'+k+'">'+esc(x)+'</div>'}).join("");$("lyr2").style.transform="";lyrOn=-2}
+function fsActive(k){var e=$("m"+k);document.querySelectorAll("#lyr2 div").forEach(function(d){d.classList.remove("on")});if(!e)return;e.classList.add("on");var box=document.querySelector("#fs .fl");$("lyr2").style.transform="translateY("+(box.clientHeight/2-e.offsetTop-e.clientHeight/2)+"px)"}
+function fsToggle(on){var f=$("fs");if(on===undefined)on=!f.classList.contains("on");f.classList.toggle("on",on);
+  if(on){$("fst").textContent=st?(st.title+" · "+st.artist):"";if(f.requestFullscreen)f.requestFullscreen().catch(function(){});lyrOn=-2}else if(document.fullscreenElement)document.exitFullscreen().catch(function(){})}
+$("nfs").onclick=function(){fsToggle()};$("fsx").onclick=function(){fsToggle(false)};
+document.addEventListener("fullscreenchange",function(){if(!document.fullscreenElement)$("fs").classList.remove("on")});
+function songChanged(s){$("ntitle").textContent=s.title||"Bir şarkı seç";$("nart").textContent=s.artist;$("ptitle").textContent=s.title||"—";$("part").textContent=s.artist;$("hello").textContent="Merhaba, "+(s.user||"");markCur()}
+function coverChanged(s){var img=$("cimg");
+  if(s.cid){var u="/api/cover?t="+T+"&v="+s.cid;img.onload=function(){img.classList.add("on");$("ph").style.display="none"};img.src=u;
+    var inn=amb?$("amb1"):$("amb2"),out=amb?$("amb2"):$("amb1");inn.style.backgroundImage="url("+u+")";inn.style.opacity=1;out.style.opacity=0;amb=amb?0:1}
+  else{img.classList.remove("on");$("ph").style.display=""}}
+function renderOverlays(s){
+  var u=s.upd,ov=$("updov");if(u){ov.classList.add("on");$("updv").textContent="v"+s.ver+"  →  v"+u.v+(u.forced?"   (zorunlu güncelleme)":"");$("updn").innerHTML=(u.notes||[]).map(function(n){return "<li>"+esc(n)+"</li>"}).join("");$("updm").textContent=u.state==="ask"?"Favorilerin, listelerin ve ayarların korunur. Güncelleme bitince uygulama kendini yeniden başlatır.":u.msg;$("updp").style.width=u.pct+"%";
+    $("updb").innerHTML=u.state==="ask"?'<button class="tb pri" id="uyes">Şimdi güncelle</button>'+(u.forced?"":'<button class="tb" id="ulat">Sonra</button>'):u.state==="error"?'<button class="tb pri" id="uyes">Tekrar dene</button>'+(u.forced?"":'<button class="tb" id="ulat">Kapat</button>'):"";
+    if($("uyes"))$("uyes").onclick=function(){cmd({cmd:"upd_install"})};if($("ulat"))$("ulat").onclick=function(){cmd({cmd:"upd_later"})}}else ov.classList.remove("on");
+  var l=s.login,lo=$("logov");if(l&&l.need&&!u){lo.classList.add("on");$("lgt").textContent=l.denied?"Erişim için doğrulama gerekli":"Devam etmek için Discord ile giriş yap";
+    $("lgd").textContent=l.denied?("Gardaş FM’i kullanmak için Discord sunucumuzda doğrulanman gerekiyor: 1) Sunucuya katıl  2) "+(l.tiktok?l.tiktok+" hesabını takip et, ekran görüntüsünü ":"")+"#"+l.channel+" kanalına yaz/at  3) Rolün verilince “Tekrar kontrol et”e bas."):"Sadece adın ve profil resmin okunur, şifre istenmez. Bir kere giriş yapman yeterli.";
+    $("lgm").textContent=l.msg||"";$("lgb").innerHTML='<button class="tb pri" id="lgo"'+(l.busy?" disabled":"")+'>'+(l.denied?"Tekrar kontrol et":"Discord ile giriş")+'</button>'+(l.invite?'<button class="tb" id="lgi">Sunucuya katıl</button>':"")+'<button class="tb" id="lgq">Çıkış</button>';
+    $("lgo").onclick=function(){cmd({cmd:"login"})};if($("lgi"))$("lgi").onclick=function(){cmd({cmd:"open_url",u:l.invite})};$("lgq").onclick=function(){cmd({cmd:"quit"})}}else lo.classList.remove("on");
+  if(s.found&&s.found.state){var f=$("fmsg");if(f)f.textContent=s.found.state==="busy"?"Dinleniyor / aranıyor...":s.found.state==="done"?("Bulundu: "+s.found.artist+" - "+s.found.title):s.found.msg;
+    if(s.found.state==="done"&&foundShown!==s.found.title&&$("fres")){foundShown=s.found.title;api("/api/list?n=__ara").then(function(rows){curRows=rows;$("fres").innerHTML=rowsHtml(rows,"__ara",false);bindRows("__ara",false)})}}}
+function poll(){api("/api/state").then(function(s){fails=0;$("lost").style.display="none";st=s;t0=performance.now();
+  document.body.className="a-"+(s.anim==="Hafif"?"hafif":s.anim==="Kapalı"?"kapali":"tam");
+  if(s.key!==lastKey){lastKey=s.key;songChanged(s)}if(s.cid!==lastCid){lastCid=s.cid;coverChanged(s)}if(s.lsig!==lastLs){lastLs=s.lsig;renderLyrics(s)}
+  document.documentElement.style.setProperty("--a",rgb(s.colors[0]));document.documentElement.style.setProperty("--b",rgb(s.colors[1]));
+  $("pp").textContent=s.playing?"❚❚":"▶";$("ttot").textContent=fmt(s.dur);$("nfav").classList.toggle("fav",!!s.fav);$("nfav").textContent=s.fav?"♥":"♡";
+  $("shuf").classList.toggle("on",!!s.shuffle);$("rep").classList.toggle("on",s.repeat>0);$("rep").textContent=s.repeat===2?"↻¹":"↻";$("slp").classList.toggle("on",s.sleep>0);$("eqb").classList.toggle("on",s.eq!=="Düz"||s.rate!==1);
+  if(!volDrag&&+$("vol").value!==s.vol)$("vol").value=s.vol;markCur();(s.toasts||[]).forEach(function(t){toast(t)});renderOverlays(s);endSplash()
+ }).catch(function(e){if(e&&e.err){$("lost").innerHTML="<div><h2>Hata</h2>"+esc(e.err)+"<br><small>Bu yazının ekran görüntüsünü gönder.</small></div>";$("lost").style.display="grid"}else if(++fails>=3)$("lost").style.display="grid"})}
+$("pp").onclick=function(){cmd({cmd:"toggle"})};$("next").onclick=function(){cmd({cmd:"next"})};$("prev").onclick=function(){cmd({cmd:"prev"})};$("shuf").onclick=function(){cmd({cmd:"shuffle"})};$("rep").onclick=function(){cmd({cmd:"repeat"})};
+$("slp").onclick=function(e){var r=e.target.getBoundingClientRect();showMenu(r.left,r.top-190,[{h:"UYKU ZAMANLAYICI"},{t:"Kapalı",fn:function(){cmd({cmd:"sleep",m:0})}},{t:"15 dakika",fn:function(){cmd({cmd:"sleep",m:15})}},{t:"30 dakika",fn:function(){cmd({cmd:"sleep",m:30})}},{t:"60 dakika",fn:function(){cmd({cmd:"sleep",m:60})}}])};
+$("eqb").onclick=function(e){var r=e.target.getBoundingClientRect();api("/api/eq").then(function(q){var it=[{h:"EKOLAYZIR"}].concat(q.presets.map(function(p){return {t:(st&&st.eq===p?"✓  ":"")+p,fn:function(){cmd({cmd:"eq",name:p})}}}),["-",{h:"HIZ"}],[0.75,1,1.25,1.5].map(function(x){return {t:(st&&st.rate===x?"✓  ":"")+x+"x",fn:function(){cmd({cmd:"rate",v:x})}}}));showMenu(r.left-60,Math.max(8,r.top-it.length*38),it)})};
+$("nfav").onclick=function(){if(st&&st.title){cmd({cmd:"fav_now"});toast(st.fav?"Favorilerden çıkarıldı":"Favorilere eklendi")}};
+$("bq").onclick=function(){askYes("Gardaş FM kapatılsın mı?",function(){cmd({cmd:"quit"})})};
+$("track").onclick=function(e){var r=this.getBoundingClientRect();cmd({cmd:"seek",f:(e.clientX-r.left)/r.width})};
+$("vol").oninput=function(){volDrag=1;clearTimeout($("vol").h);cmd({cmd:"vol",v:+this.value});$("vol").h=setTimeout(function(){volDrag=0},1500)};
+document.addEventListener("keydown",function(e){var inp=document.activeElement&&document.activeElement.tagName==="INPUT";
+  if(e.code==="Space"&&!inp){e.preventDefault();cmd({cmd:"toggle"})}else if((e.key==="l"||e.key==="L")&&!inp)fsToggle();else if(e.key==="F1"){e.preventDefault();showHelp()}else if(e.key==="Escape")fsToggle(false)});
+document.querySelector(".np").addEventListener("mousemove",function(e){var r=$("cover").getBoundingClientRect(),x=(e.clientX-r.left-r.width/2)/r.width,y=(e.clientY-r.top-r.height/2)/r.height;$("cover").style.transform="perspective(700px) rotateY("+(x*22)+"deg) rotateX("+(-y*22)+"deg) scale(1.04)"});
+document.querySelector(".np").addEventListener("mouseleave",function(){$("cover").style.transform=""});
+var cv=$("viz"),cx=cv.getContext("2d"),bars=64,lv=[],last=performance.now(),smooth=0;for(var i=0;i<bars;i++)lv.push(0);
+function frame(now){var dt=Math.min(.1,(now-last)/1000);last=now;
+  if(st){var pos=st.pos+(st.playing?(now-t0)/1000:0);if(st.dur)pos=Math.min(pos,st.dur);var p=st.dur?pos/st.dur:0;
+   $("fill").style.width=(p*100)+"%";$("knob").style.left=(p*100)+"%";$("tcur").textContent=fmt(pos);
+   if(st.times&&st.times.length){var k=-1;for(var j=0;j<st.times.length;j++){if(st.times[j]<=pos+.15+(st.off||0))k=j;else break}
+     if(k!==lyrOn){lyrOn=k;fsActive(k);document.querySelectorAll("#lyr div").forEach(function(d){d.classList.remove("on")});var el=$("l"+k);
+       if(el){el.classList.add("on");var box=document.querySelector(".lyr");$("lyr").style.transform="translateY("+(box.clientHeight/2-el.offsetTop-el.clientHeight/2)+"px)"}}}}
+  cx.clearRect(0,0,640,640);if(!document.body.classList.contains("a-kapali")){var R=224,t=now/1000,pl=st&&st.playing;smooth+=((pl?1:.1)-smooth)*Math.min(1,dt*4);
+  var ca=getComputedStyle(document.documentElement);var A=ca.getPropertyValue("--a"),B=ca.getPropertyValue("--b");
+  for(var i=0;i<bars;i++){var target=(Math.sin(t*3+i*.5)*.5+.5)*(Math.sin(t*1.3+i*.2)*.4+.6)*smooth;lv[i]+=(target-lv[i])*Math.min(1,dt*12);
+    var a=i/bars*Math.PI*2-Math.PI/2,h=12+lv[i]*70,x1=320+Math.cos(a)*R*.7,y1=320+Math.sin(a)*R*.7,x2=320+Math.cos(a)*(R*.7+h),y2=320+Math.sin(a)*(R*.7+h);
+    var g=cx.createLinearGradient(x1,y1,x2,y2);g.addColorStop(0,A);g.addColorStop(1,B);cx.strokeStyle=g;cx.lineWidth=6;cx.lineCap="round";cx.beginPath();cx.moveTo(x1,y1);cx.lineTo(x2,y2);cx.stroke()}}
+  requestAnimationFrame(frame)}
+loadNav();showHome();poll();setInterval(poll,500);setInterval(loadNav,20000);requestAnimationFrame(frame);
+</script></body></html>
