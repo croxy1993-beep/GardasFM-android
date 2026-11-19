@@ -22,28 +22,47 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      # Gradle sürümü sabit: GitHub sunucusundaki hazır Gradle güncellense bile derleme bozulmaz.
       - name: Gradle 8.10.2 kurulumu
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.10.2"
 
-      - name: İmza anahtarını hazırla
+      - name: İmza anahtarını hazırla ve doğrula
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.KEY_PASSWORD }}
         run: |
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "HATA: KEYSTORE_BASE64 gizli bilgisi eklenmemiş. KURULUM_ANDROID.md dosyasındaki 'İmza anahtarı' adımlarını yap."
+          if [ -z "$KEYSTORE_BASE64" ]; then echo "HATA: KEYSTORE_BASE64 gizli bilgisi boş ya da eklenmemiş."; exit 1; fi
+          B64=$(printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]')
+          KS_PASS=$(printf '%s' "$KS_PASS" | tr -d '[:space:]')
+          KS_ALIAS=$(printf '%s' "$KS_ALIAS" | tr -d '[:space:]')
+          KEY_PASS=$(printf '%s' "$KEY_PASS" | tr -d '[:space:]')
+          echo "KEYSTORE_BASE64 uzunluğu: ${#B64} (olması gereken: 3512)"
+          echo "KEYSTORE_PASSWORD uzunluğu: ${#KS_PASS} (olması gereken: 24)"
+          echo "KEY_ALIAS uzunluğu: ${#KS_ALIAS} (olması gereken: 6)"
+          echo "KEY_PASSWORD uzunluğu: ${#KEY_PASS} (olması gereken: 24)"
+          printf '%s' "$B64" | base64 -d > "$RUNNER_TEMP/gardas.keystore" || { echo "HATA: KEYSTORE_BASE64 bozuk, yeniden yapıştır."; exit 1; }
+          if ! keytool -list -keystore "$RUNNER_TEMP/gardas.keystore" -storepass "$KS_PASS" -storetype pkcs12 > /dev/null 2>&1; then
+            echo "HATA: Anahtar dosyası açılamadı. KEYSTORE_PASSWORD yanlış ya da KEYSTORE_BASE64 eksik kopyalanmış."
             exit 1
           fi
-          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/gardas.keystore"
+          if ! keytool -list -keystore "$RUNNER_TEMP/gardas.keystore" -storepass "$KS_PASS" -storetype pkcs12 -alias "$KS_ALIAS" > /dev/null 2>&1; then
+            echo "HATA: KEY_ALIAS yanlış. Dosyadaki gibi küçük harfle yazılmalı."
+            exit 1
+          fi
+          if [ "$KS_PASS" != "$KEY_PASS" ]; then
+            echo "HATA: KEYSTORE_PASSWORD ile KEY_PASSWORD aynı olmalı."
+            exit 1
+          fi
+          echo "Anahtar doğrulandı: dosya, alias ve şifre doğru."
           echo "GARDAS_KEYSTORE=$RUNNER_TEMP/gardas.keystore" >> "$GITHUB_ENV"
+          echo "GARDAS_STORE_PASSWORD=$KS_PASS" >> "$GITHUB_ENV"
+          echo "GARDAS_KEY_ALIAS=$KS_ALIAS" >> "$GITHUB_ENV"
+          echo "GARDAS_KEY_PASSWORD=$KEY_PASS" >> "$GITHUB_ENV"
 
       - name: APK derle
-        env:
-          GARDAS_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          GARDAS_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          GARDAS_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           SETTINGS_PATH=$(find . -maxdepth 3 -name "settings.gradle.kts" | head -n 1)
           if [ -z "$SETTINGS_PATH" ]; then
