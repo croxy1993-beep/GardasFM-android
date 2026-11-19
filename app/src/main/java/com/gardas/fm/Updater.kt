@@ -26,7 +26,7 @@ data class UpdateInfo(val code: Int, val tag: String, val notes: String, val url
  */
 object Updater {
     /** Güncellemelerin yayınlandığı GitHub deposu (PUBLIC olmalı). */
-    const val REPO = "croxy1993-beep/GardasFM2"
+  const val REPO = "croxy1993-beep/GardasFM-android"
 
     val available = MutableStateFlow<UpdateInfo?>(null)
     val progress = MutableStateFlow(-1)          // -1: indirme yok, 0..100: iniyor
