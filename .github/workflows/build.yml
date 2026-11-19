@@ -1,0 +1,72 @@
+name: APK derle
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Repoyu klonla
+        uses: actions/checkout@v4
+
+      - name: Java 21 kurulumu
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # Gradle sürümü sabit: GitHub sunucusundaki hazır Gradle güncellense bile derleme bozulmaz.
+      - name: Gradle 8.10.2 kurulumu
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+
+      - name: İmza anahtarını hazırla
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "HATA: KEYSTORE_BASE64 gizli bilgisi eklenmemiş. KURULUM_ANDROID.md dosyasındaki 'İmza anahtarı' adımlarını yap."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/gardas.keystore"
+          echo "GARDAS_KEYSTORE=$RUNNER_TEMP/gardas.keystore" >> "$GITHUB_ENV"
+
+      - name: APK derle
+        env:
+          GARDAS_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          GARDAS_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          GARDAS_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          SETTINGS_PATH=$(find . -maxdepth 3 -name "settings.gradle.kts" | head -n 1)
+          if [ -z "$SETTINGS_PATH" ]; then
+            echo "HATA: settings.gradle.kts bulunamadı!"
+            exit 1
+          fi
+          cd "$(dirname "$SETTINGS_PATH")"
+          gradle assembleRelease --no-daemon
+
+      - name: APK hazırla
+        run: |
+          FOUND_APK=$(find . -path "*outputs/apk/release*" -name "*.apk" | head -n 1)
+          if [ -z "$FOUND_APK" ]; then
+            echo "HATA: Derlenen APK bulunamadı!"
+            exit 1
+          fi
+          cp "$FOUND_APK" GardasFM.apk
+
+      - name: Release olarak yayınla
+        uses: softprops/action-gh-release@v2
+        if: success()
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Gardaş FM v${{ github.run_number }}
+          files: GardasFM.apk
+          make_latest: true
