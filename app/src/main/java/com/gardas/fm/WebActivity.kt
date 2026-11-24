@@ -88,6 +88,12 @@ class WebActivity : ComponentActivity() {
             override fun pickBackground() { bgPicker.launch("image/*") }
             override fun pickFolder() { folderPicker.launch(null) }
             override fun quit() { moveTaskToBack(true) }
+            override fun openUrl(url: String) {
+                try {
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                } catch (e: Exception) {
+                }
+            }
         }
 
         if (Build.VERSION.SDK_INT >= 33 &&

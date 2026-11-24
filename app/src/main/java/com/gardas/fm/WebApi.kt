@@ -5,8 +5,13 @@ import android.media.AudioManager
 import androidx.compose.ui.graphics.toArgb
 import androidx.media3.common.C
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 import java.net.URLDecoder
 
 /**
@@ -21,6 +26,7 @@ object WebApi {
         fun pickBackground()
         fun pickFolder()
         fun quit()
+        fun openUrl(url: String)
     }
 
     var hooks: Hooks? = null
@@ -143,6 +149,7 @@ object WebApi {
             .put("found", JSONObject.NULL)
             .put("upd", upd)
             .put("login", JSONObject().put("need", false))
+            .put("bgs", listOf("aurora", "cover", "sade")[Store.getInt("bgstyle", 0).coerceIn(0, 2)])
     }
 
     // ------------------------------------------------------------ listeler
@@ -258,6 +265,7 @@ object WebApi {
             .put("dim", Prefs.dim.value.toDouble())
             .put("blur", Prefs.blur.value.toDouble())
             .put("bg", Prefs.bgPath.value.isNotEmpty())
+            .put("bg_style", listOf("aurora", "cover", "sade")[Store.getInt("bgstyle", 0).coerceIn(0, 2)])
         return JSONObject()
             .put("plat", "android")
             .put("v", v)
@@ -265,6 +273,7 @@ object WebApi {
             .put("ver", Updater.currentName(ctx))
             .put("data", "")
             .put("audd", false)
+            .put("keys", JSONObject().put("ai", Store.getStr("ai_key").isNotBlank()))
     }
 
     private fun about(ctx: Context): JSONObject {
@@ -356,6 +365,13 @@ object WebApi {
             "pick_folder" -> hooks?.pickFolder()
             "clear_bg" -> Prefs.clearBackground()
             "quit" -> hooks?.quit()
+            "sync" -> syncPc(c.optString("addr"), c.optString("code"))
+            "spotify_url" -> spotifyImport(c.optString("url"))
+            "ai_dj" -> aiPlaylist(c.optString("p"))
+            "open_url" -> {
+                val u = c.optString("u")
+                if (u == "https://aistudio.google.com/apikey") hooks?.openUrl(u)
+            }
         }
     }
 
@@ -371,6 +387,187 @@ object WebApi {
             }
             "dim" -> (v as? Number)?.let { Prefs.setDim(it.toFloat().coerceIn(0f, 0.9f)) }
             "blur" -> (v as? Number)?.let { Prefs.setBlur(it.toFloat().coerceIn(0f, 20f)) }
+            "ai_key" -> Store.putStr("ai_key", ((v as? String) ?: "").trim())
+            "bg_style" -> Store.putInt("bgstyle", listOf("aurora", "cover", "sade").indexOf((v as? String) ?: "").coerceAtLeast(0))
+        }
+    }
+
+    // ------------------------------------------------------------ ağ yardımcıları ve yeni özellikler
+    private class HttpErr(val code: Int) : RuntimeException("HTTP $code")
+
+    private fun httpJson(method: String, urlStr: String, body: String?, headers: Map<String, String> = emptyMap()): String {
+        val c = URL(urlStr).openConnection() as HttpURLConnection
+        c.requestMethod = method
+        c.connectTimeout = 10000
+        c.readTimeout = 25000
+        headers.forEach { (k, v) -> c.setRequestProperty(k, v) }
+        if (body != null) {
+            c.doOutput = true
+            c.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            c.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+        }
+        val code = c.responseCode
+        if (code !in 200..299) throw HttpErr(code)
+        return c.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+    }
+
+    private fun songJson(s: Song): JSONObject =
+        JSONObject().put("a", s.artist).put("t", s.title).put("u", s.url ?: JSONObject.NULL).put("d", s.durationSec)
+
+    private fun songFrom(o: JSONObject): Song? {
+        val t = o.optString("t", "").trim()
+        if (t.isEmpty()) return null
+        val u = if (o.isNull("u")) null else o.optString("u").ifBlank { null }
+        return Song(artist = o.optString("a", "").trim(), title = t, url = u, durationSec = o.optLong("d", 0L))
+    }
+
+    private fun syncPc(addr: String, code: String) {
+        Engine.scope.launch {
+            try {
+                val mine = JSONObject().put("fav", JSONArray(Engine.favorites.value.map { songJson(it) }))
+                val pls = JSONObject()
+                Engine.playlists.value.forEach { p -> pls.put(p.name, JSONArray(p.songs.map { songJson(it) })) }
+                mine.put("playlists", pls).put("tags", JSONObject())
+                val reply = withContext(Dispatchers.IO) {
+                    JSONObject(httpJson("POST", "http://${addr.trim()}/sync?code=${code.trim()}", mine.toString()))
+                }
+                val favs = ArrayList<Song>()
+                reply.optJSONArray("fav")?.let { a ->
+                    for (i in 0 until a.length()) songFrom(a.getJSONObject(i))?.let { favs.add(it) }
+                }
+                val lists = LinkedHashMap<String, List<Song>>()
+                reply.optJSONObject("playlists")?.let { o ->
+                    o.keys().forEach { name ->
+                        val a = o.getJSONArray(name)
+                        val l = ArrayList<Song>()
+                        for (i in 0 until a.length()) songFrom(a.getJSONObject(i))?.let { l.add(it) }
+                        lists[name] = l
+                    }
+                }
+                val added = Engine.mergeSynced(favs, lists)
+                Engine.say("Eşitlendi: telefona $added yeni şarkı geldi, bilgisayara da gönderildi")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Engine.say("Eşitleme olmadı. Aynı Wi-Fi'de misiniz, adres ve kod doğru mu? (${e.message?.take(60)})")
+            }
+        }
+    }
+
+    private fun findKey(o: Any?, key: String): Any? {
+        when (o) {
+            is JSONObject -> {
+                if (o.has(key)) return o.get(key)
+                val it = o.keys()
+                while (it.hasNext()) {
+                    val r = findKey(o.opt(it.next()), key)
+                    if (r != null) return r
+                }
+            }
+            is JSONArray -> for (i in 0 until o.length()) {
+                val r = findKey(o.opt(i), key)
+                if (r != null) return r
+            }
+        }
+        return null
+    }
+
+    private fun spotifyImport(url: String) {
+        Engine.scope.launch {
+            try {
+                val m = Regex("""open\.spotify\.com/(?:intl-[a-z]+/)?(playlist|album)/([A-Za-z0-9]{10,32})""").find(url)
+                    ?: Regex("""spotify:(playlist|album):([A-Za-z0-9]{10,32})""").find(url)
+                    ?: throw RuntimeException("Bu bir Spotify liste bağlantısı değil")
+                val kind = m.groupValues[1]
+                val id = m.groupValues[2]
+                Engine.say("Spotify listesi okunuyor...")
+                val html = withContext(Dispatchers.IO) {
+                    httpJson("GET", "https://open.spotify.com/embed/$kind/$id", null,
+                        mapOf("User-Agent" to "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/124 Mobile Safari/537.36",
+                            "Accept-Language" to "tr,en;q=0.8"))
+                }
+                val json = Regex("""<script id="__NEXT_DATA__" type="application/json">(.*?)</script>""", RegexOption.DOT_MATCHES_ALL)
+                    .find(html)?.groupValues?.get(1) ?: throw RuntimeException("Spotify sayfası okunamadı")
+                val data = JSONObject(json)
+                val tl = findKey(data, "trackList") as? JSONArray ?: throw RuntimeException("Şarkı listesi bulunamadı (liste herkese açık mı?)")
+                val ent = findKey(data, "entity") as? JSONObject
+                val name = ent?.optString("name")?.ifBlank { null } ?: ent?.optString("title")?.ifBlank { null } ?: "Spotify listesi"
+                val songs = ArrayList<Song>()
+                for (i in 0 until tl.length()) {
+                    val t = tl.optJSONObject(i) ?: continue
+                    val title = t.optString("title").trim()
+                    if (title.isNotEmpty()) songs.add(Song(artist = t.optString("subtitle").trim(), title = title))
+                }
+                if (songs.isEmpty()) throw RuntimeException("Listede şarkı bulunamadı")
+                val nm = Engine.importPlaylist(name, songs)
+                Engine.say("“$nm” eklendi: ${songs.size} şarkı (YouTube'dan çalınır)")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Engine.say("Liste eklenemedi: ${e.message?.take(70)}")
+            }
+        }
+    }
+
+    private fun aiPrompt(istek: String, n: Int = 20): String = """Sen bir müzik küratörüsün. Kullanıcının isteğine göre $n şarkılık bir çalma listesi hazırla.
+Kurallar: gerçek ve YouTube'da bulunabilen şarkılar olsun; her sanatçıdan en fazla 2 şarkı; aynı şarkıyı tekrarlama; istek Türkçe ise Türkçe ağırlıklı seç.
+SADECE şu JSON biçiminde cevap ver, başka hiçbir şey yazma:
+{"baslik": "kısa liste adı", "sarkilar": [{"sanatci": "...", "sarki": "..."}]}
+İstek: ${istek.take(400)}"""
+
+    private fun callGemini(key: String, prompt: String): String {
+        val body = JSONObject()
+            .put("contents", JSONArray().put(JSONObject().put("parts", JSONArray().put(JSONObject().put("text", prompt)))))
+            .put("generationConfig", JSONObject().put("temperature", 0.9).put("responseMimeType", "application/json"))
+            .toString()
+        var last = "Yapay zekâ cevap vermedi"
+        for (m in listOf("gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash")) {
+            try {
+                val r = httpJson("POST", "https://generativelanguage.googleapis.com/v1beta/models/" + m + ":generateContent?key=" + key, body)
+                return JSONObject(r).getJSONArray("candidates").getJSONObject(0).getJSONObject("content")
+                    .getJSONArray("parts").getJSONObject(0).getString("text")
+            } catch (e: HttpErr) {
+                if (e.code == 404) {
+                    last = "model bulunamadı: $m"
+                    continue
+                }
+                if (e.code == 400 || e.code == 401 || e.code == 403) throw RuntimeException("Anahtar geçersiz ya da bu bölgede kullanılamıyor")
+                throw e
+            }
+        }
+        throw RuntimeException(last)
+    }
+
+    private fun aiPlaylist(istek: String) {
+        Engine.scope.launch {
+            try {
+                val key = Store.getStr("ai_key").trim()
+                if (key.isEmpty()) throw RuntimeException("Önce yapay zekâ anahtarını gir")
+                if (istek.trim().length < 3) throw RuntimeException("Ne istediğini yaz")
+                Engine.say("Liste hazırlanıyor, birkaç saniye...")
+                val text = withContext(Dispatchers.IO) { callGemini(key, aiPrompt(istek)) }
+                val t = text.trim().removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
+                val i = t.indexOf('{')
+                val j = t.lastIndexOf('}')
+                if (i < 0 || j <= i) throw RuntimeException("Yapay zekâ beklenen biçimde cevap vermedi")
+                val d = JSONObject(t.substring(i, j + 1))
+                val arr = d.optJSONArray("sarkilar") ?: throw RuntimeException("Yapay zekâ şarkı listesi veremedi")
+                val songs = ArrayList<Song>()
+                for (k in 0 until arr.length()) {
+                    val o = arr.optJSONObject(k) ?: continue
+                    val title = o.optString("sarki").trim()
+                    if (title.isNotEmpty()) songs.add(Song(artist = o.optString("sanatci").trim(), title = title))
+                }
+                if (songs.isEmpty()) throw RuntimeException("Yapay zekâ şarkı listesi veremedi, isteği değiştirip dene")
+                val nm = Engine.importPlaylist("AI: " + d.optString("baslik", "Yapay zekâ listesi"), songs)
+                val list = Engine.playlists.value.firstOrNull { it.name == nm }?.songs ?: songs
+                Engine.playList(list, 0)
+                Engine.say("“$nm” hazır: ${list.size} şarkı, çalıyor")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Engine.say("Yapay zekâ DJ olmadı: ${e.message?.take(80)}")
+            }
         }
     }
 }

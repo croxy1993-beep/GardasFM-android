@@ -702,6 +702,56 @@ object Engine {
         setPlaylistSongs(name, l)
     }
 
+    /** Hazır şarkı listesiyle yeni çalma listesi oluşturur (aynı ad varsa numara ekler); oluşan adı döndürür. */
+    fun importPlaylist(name: String, songs: List<Song>): String {
+        val base = name.trim().take(26).ifEmpty { "İçe aktarılan" }
+        var n = base
+        var k = 2
+        while (playlists.value.any { it.name.equals(n, ignoreCase = true) }) {
+            n = "$base ($k)"
+            k++
+        }
+        playlists.value = playlists.value + Playlist(n, songs.distinctBy { it.key })
+        savePlaylists()
+        return n
+    }
+
+    /** PC ile eşitleme: gelen şarkıları favorilere ve listelere ekler; yeni eklenen şarkı sayısını döndürür. */
+    fun mergeSynced(favs: List<Song>, lists: Map<String, List<Song>>): Int {
+        var added = 0
+        val fav = favorites.value.toMutableList()
+        val have = fav.map { it.key }.toHashSet()
+        for (s in favs) {
+            if (have.add(s.key)) {
+                fav.add(s)
+                added++
+            }
+        }
+        favorites.value = fav
+        Store.putSongs("fav", fav)
+        var pls = playlists.value
+        for ((name, songs) in lists) {
+            val i = pls.indexOfFirst { it.name.equals(name, ignoreCase = true) }
+            if (i < 0) {
+                pls = pls + Playlist(name.take(26), songs.distinctBy { it.key })
+                added += songs.size
+            } else {
+                val cur = pls[i]
+                val keys = cur.songs.map { it.key }.toHashSet()
+                val extra = songs.filter { keys.add(it.key) }
+                if (extra.isNotEmpty()) {
+                    val l = pls.toMutableList()
+                    l[i] = cur.copy(songs = cur.songs + extra)
+                    pls = l
+                    added += extra.size
+                }
+            }
+        }
+        playlists.value = pls
+        savePlaylists()
+        return added
+    }
+
     // ------------------------------------------------------------ karışıklar (5.0)
     /** Ruh haline göre mix: (ad, alt yazı, katalog kategorileri, etiket) */
     val moods = listOf(

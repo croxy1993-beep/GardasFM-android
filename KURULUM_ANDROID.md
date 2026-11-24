@@ -29,3 +29,11 @@ Uygulama artık PC'deki yeni arayüzün telefon sürümünü gösterir (`app/src
 - Açılış ekranı `WebActivity`dır. Eski Compose arayüzü (`MainActivity`) derleme için duruyor ama başlatılmıyor.
 - Arayüzü değiştirmek için sadece `assets/ui/index.html` dosyasını düzenle (PC arayüzüyle aynı kod tabanı).
 - Telefonda olmayanlar: Discord girişi, PC'ye özel ayarlar, dinleyerek şarkı bulma, liste paylaşma (.gfm).
+
+---
+## Telefon güncellemesi (yeni)
+- PC ile eşitleme: Ana sayfa > Telefonla eşitle (PC adresi ve 6 haneli kod). Favoriler ve listeler iki yönde birleşir.
+- Spotify listesi ekleme: Ana sayfa > Listeni getir (liste herkese açık olmalı).
+- Yapay zekâ DJ: Ana sayfa > Yapay zekâ DJ (ücretsiz Gemini anahtarı gerekir).
+- Aurora arka plan: Ayarlar > Arka plan (Aurora, Kapak, Sade).
+- Not: eşitleme için AndroidManifest'e `usesCleartextTraffic` eklendi (aynı Wi-Fi'deki PC ile http konuşur).
